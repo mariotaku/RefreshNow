@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<integer-array name="gplus_colors">
+		<item>@integer/google_blue</item>
+		<item>@integer/google_green</item>
+		<item>@integer/google_red</item>
+		<item>@integer/google_yellow</item>
+	</integer-array>
+
+</resources>

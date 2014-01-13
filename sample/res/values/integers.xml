@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<integer name="google_blue">0xFF1F73F1</integer>
+	<integer name="google_green">0xFF06A35E</integer>
+	<integer name="google_yellow">0xFFFFBA0D</integer>
+	<integer name="google_red">0xFFDA513E</integer>
+
+</resources>

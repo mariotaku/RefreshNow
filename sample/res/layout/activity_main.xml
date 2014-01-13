@@ -1,0 +1,26 @@
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	tools:context=".MainActivity">
+
+	<org.mariotaku.refreshnow.widget.RefreshNowListView
+		android:id="@android:id/list"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"/>
+
+	<org.mariotaku.refreshnow.widget.RefreshNowProgressIndicator
+		android:id="@android:id/progress"
+		android:layout_width="match_parent"
+		android:layout_height="3dp"
+		android:padding="0dp"
+		app:spb_color="@integer/google_green"
+		app:spb_colors="@array/gplus_colors"
+		app:spb_interpolator="spb_interpolator_acceleratedecelerate"
+		app:spb_mirror_mode="true"
+		app:spb_reversed="true"
+		app:spb_sections_count="2"
+		app:spb_speed="1.7"
+		app:spb_stroke_separator_length="0dp"
+		app:spb_stroke_width="3dp"/>
+
+</merge>

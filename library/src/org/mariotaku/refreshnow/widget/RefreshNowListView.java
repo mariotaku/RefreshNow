@@ -44,6 +44,12 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
+	public boolean isOverScrolling() {
+		if (!canOverScroll()) return false;
+		return getScrollY() != 0;
+	}
+
+	@Override
 	public boolean isRefreshing() {
 		return mHelper.isRefreshing();
 	}
@@ -52,6 +58,18 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	public boolean onTouchEvent(final MotionEvent ev) {
 		mHelper.beforeOnTouchEvent(ev);
 		return super.onTouchEvent(ev);
+	}
+
+	@Override
+	public void scrollBy(final int x, final int y) {
+		if (canOverScroll()) return;
+		super.scrollBy(x, y);
+	}
+
+	@Override
+	public void scrollTo(final int x, final int y) {
+		if (canOverScroll()) return;
+		super.scrollTo(x, y);
 	}
 
 	@Override
@@ -88,7 +106,13 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	@Override
 	protected void onOverScrolled(final int scrollX, final int scrollY, final boolean clampedX, final boolean clampedY) {
 		super.onOverScrolled(scrollX, scrollY, clampedX, clampedY);
-		mHelper.afterOnOverScrolled(scrollX, scrollY, clampedX, clampedY);
+		mHelper.dispatchOnOverScrolled(scrollX, scrollY, clampedX, clampedY);
+	}
+
+	@Override
+	protected void onScrollChanged(final int l, final int t, final int oldl, final int oldt) {
+		super.onScrollChanged(l, t, oldl, oldt);
+		mHelper.dispatchOnScrollChanged(l, t, oldl, oldt);
 	}
 
 	@Override

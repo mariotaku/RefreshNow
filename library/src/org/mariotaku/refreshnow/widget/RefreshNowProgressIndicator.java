@@ -15,9 +15,6 @@ import fr.castorflex.android.smoothprogressbar.SmoothProgressBar;
 
 public class RefreshNowProgressIndicator extends SmoothProgressBar implements IRefreshNowIndicatorView {
 
-	private boolean mRefreshStart;
-	private boolean mIsPulling;
-
 	public RefreshNowProgressIndicator(final Context context) {
 		this(context, null);
 	}
@@ -38,41 +35,36 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		final ClipDrawable clipDrawable = new ClipDrawable(shape, Gravity.CENTER, ClipDrawable.HORIZONTAL);
 		setProgressDrawable(clipDrawable);
 		setMax(100);
-		setVisibility(GONE);
+		setIndeterminate(false);
+		updateVisibility();
 	}
 
 	@Override
 	public void onPulled(final float percent) {
 		setProgress(Math.round(percent * 100));
-		if (mRefreshStart) {
-			setVisibility(VISIBLE);
-			setIndeterminate(true);
-		} else if (mIsPulling) {
-			setIndeterminate(false);
-			setVisibility(percent > 0 ? VISIBLE : GONE);
-		} else {
-			setIndeterminate(true);
-			setVisibility(GONE);
-		}
+		updateVisibility();
 	}
 
 	@Override
 	public void onRefreshComplete() {
 		setIndeterminate(false);
-		setVisibility(GONE);
-		mRefreshStart = false;
+		setProgress(0);
+		updateVisibility();
 	}
 
 	@Override
 	public void onRefreshStart() {
-		mRefreshStart = true;
-		setVisibility(VISIBLE);
 		setIndeterminate(true);
+		setProgress(0);
+		updateVisibility();
 	}
 
-	@Override
-	public void setIsPulling(final boolean isPulling) {
-		mIsPulling = isPulling;
+	private void updateVisibility() {
+		if (isIndeterminate()) {
+			setVisibility(VISIBLE);
+		} else {
+			setVisibility(getProgress() > 0 ? VISIBLE : GONE);
+		}
 	}
 
 }

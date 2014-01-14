@@ -8,6 +8,4 @@ public interface IRefreshNowIndicatorView {
 
 	public void onRefreshStart();
 
-	public void setIsPulling(boolean isPulling);
-
 }

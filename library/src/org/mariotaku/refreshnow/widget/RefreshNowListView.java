@@ -44,8 +44,8 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	public boolean isRefreshing(final RefreshMode mode) {
-		return mHelper.isRefreshing(mode);
+	public boolean isRefreshing() {
+		return mHelper.isRefreshing();
 	}
 
 	@Override
@@ -76,8 +76,8 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	public void setRefreshing(final RefreshMode mode, final boolean refresh) {
-		mHelper.setRefreshing(mode, refresh);
+	public void setRefreshing(final boolean refreshing) {
+		mHelper.setRefreshing(refreshing);
 	}
 
 	@Override

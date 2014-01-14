@@ -19,16 +19,16 @@ public enum RefreshMode {
 	}
 
 	public boolean hasEnd() {
-		return (flag | FLAG_END) != 0;
+		return (flag & FLAG_END) != 0;
 	}
 
 	public boolean hasStart() {
-		return (flag | FLAG_START) != 0;
+		return (flag & FLAG_START) != 0;
 	}
 
 	public static RefreshMode valueOf(final int flag) {
-		final boolean hasStart = (flag | FLAG_START) != 0;
-		final boolean hasEnd = (flag | FLAG_END) != 0;
+		final boolean hasStart = (flag & FLAG_START) != 0;
+		final boolean hasEnd = (flag & FLAG_END) != 0;
 		if (hasStart && hasEnd) return BOTH;
 		if (hasStart && !hasEnd) return START;
 		if (!hasStart && hasEnd) return END;

@@ -8,7 +8,6 @@ import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.GestureDetector;
 import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
@@ -17,13 +16,13 @@ import android.widget.OverScroller;
 
 public interface IRefreshNowView {
 
-	public static final String LOGTAG = "RefreshNow";
+	public static final String REFRESHNOW_LOGTAG = "RefreshNow";
 
 	public boolean canOverScroll();
 
 	public RefreshMode getRefreshMode();
 
-	public boolean isRefreshing(RefreshMode mode);
+	public boolean isRefreshing();
 
 	public void setOnRefreshListener(OnRefreshListener listener);
 
@@ -31,7 +30,7 @@ public interface IRefreshNowView {
 
 	public void setRefreshIndicatorView(View view);
 
-	public void setRefreshing(RefreshMode mode, boolean refresh);
+	public void setRefreshing(boolean refreshing);
 
 	public void setRefreshMode(RefreshMode mode);
 
@@ -46,7 +45,7 @@ public interface IRefreshNowView {
 
 		private int mOverScrollY;
 
-		private final SparseBooleanArray mRefreshState = new SparseBooleanArray();
+		private boolean mIsRefreshing;
 		private View mIndicatorView;
 		private final GestureDetector mGestureDetector;
 		private final OverScroller mScroller;
@@ -62,6 +61,7 @@ public interface IRefreshNowView {
 			final float density = metrics.density;
 			mMaxYOverscrollDistance = (int) (density * MAX_Y_OVERSCROLL_DISTANCE);
 			mScroller = new OverScroller(context);
+			setRefreshMode(RefreshMode.BOTH);
 		}
 
 		public void afterOnOverScrolled(final int scrollX, final int scrollY, final boolean clampedX,
@@ -124,8 +124,9 @@ public interface IRefreshNowView {
 		}
 
 		public int computeDeltaY(final int deltaY, final int scrollY, final boolean isTouchEvent) {
-			if (isTouchEvent && (mRefreshState.get(RefreshMode.FLAG_START) || mRefreshState.get(RefreshMode.FLAG_END)))
-				return 0;
+			if (isTouchEvent && mIsRefreshing) return 0;
+			if (isTouchEvent && scrollY == 0 && deltaY < 0 && !mRefreshMode.hasStart()) return 0;
+			if (isTouchEvent && scrollY == 0 && deltaY > 0 && !mRefreshMode.hasEnd()) return 0;
 			final float pullPercent = Math.abs((float) scrollY) / mMaxYOverscrollDistance;
 			final int factor = 2 + Math.round(pullPercent * 3);
 			return isTouchEvent ? deltaY / factor : deltaY;
@@ -143,10 +144,7 @@ public interface IRefreshNowView {
 			if (mRefreshListener != null) {
 				mRefreshListener.onRefreshStart(refreshMode);
 			}
-			if (mIndicatorView != null) {
-				((IRefreshNowIndicatorView) mIndicatorView).onRefreshStart();
-			}
-			((IRefreshNowView) mView).setRefreshing(refreshMode, true);
+			((IRefreshNowView) mView).setRefreshing(true);
 		}
 
 		public int getMaxYOverscrollDistance() {
@@ -163,15 +161,8 @@ public interface IRefreshNowView {
 		}
 
 		@Override
-		public boolean isRefreshing(final RefreshMode mode) {
-			boolean result = false;
-			if (mode.hasStart()) {
-				result |= mRefreshState.get(RefreshMode.FLAG_START);
-			}
-			if (mode.hasEnd()) {
-				result |= mRefreshState.get(RefreshMode.FLAG_END);
-			}
-			return result;
+		public boolean isRefreshing() {
+			return mIsRefreshing;
 		}
 
 		@Override
@@ -197,7 +188,7 @@ public interface IRefreshNowView {
 			if (canOverScroll() || !mIsDown) return true;
 			mOverScrollY = 0;
 			final int scrollY = mView.getScrollY();
-			Log.d(LOGTAG, String.format("Call overScrollVertically, scrollY: %d", scrollY));
+			Log.d(REFRESHNOW_LOGTAG, String.format("Call overScrollVertically, scrollY: %d", scrollY));
 			if (Math.abs(scrollY) >= getMaxYOverscrollDistance()) {
 				cancelTouchEvent();
 				dispatchRefreshStart(scrollY);
@@ -234,20 +225,9 @@ public interface IRefreshNowView {
 
 		@Override
 		public void setRefreshComplete() {
-			int flags = 0;
-			if (mRefreshState.get(RefreshMode.FLAG_START)) {
-				flags |= RefreshMode.FLAG_START;
-			}
-			if (mRefreshState.get(RefreshMode.FLAG_END)) {
-				flags |= RefreshMode.FLAG_END;
-			}
-			setRefreshing(RefreshMode.BOTH, false);
-			final RefreshMode mode = RefreshMode.valueOf(flags);
-			if (mRefreshListener != null && mode != RefreshMode.NONE) {
+			setRefreshing(false);
+			if (mRefreshListener != null && mRefreshMode != RefreshMode.NONE) {
 				mRefreshListener.onRefreshComplete();
-			}
-			if (mIndicatorView != null) {
-				((IRefreshNowIndicatorView) mIndicatorView).onRefreshComplete();
 			}
 		}
 
@@ -259,12 +239,14 @@ public interface IRefreshNowView {
 		}
 
 		@Override
-		public void setRefreshing(final RefreshMode mode, final boolean refresh) {
-			if (mode.hasStart()) {
-				mRefreshState.put(RefreshMode.FLAG_START, refresh);
-			}
-			if (mode.hasEnd()) {
-				mRefreshState.put(RefreshMode.FLAG_END, refresh);
+		public void setRefreshing(final boolean refreshing) {
+			mIsRefreshing = refreshing;
+			if (mIndicatorView != null) {
+				if (refreshing) {
+					((IRefreshNowIndicatorView) mIndicatorView).onRefreshStart();
+				} else {
+					((IRefreshNowIndicatorView) mIndicatorView).onRefreshComplete();
+				}
 			}
 		}
 

@@ -12,6 +12,7 @@ import android.graphics.drawable.shapes.RectShape;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import fr.castorflex.android.smoothprogressbar.SmoothProgressBar;
+import fr.castorflex.android.smoothprogressbar.SmoothProgressDrawable;
 
 public class RefreshNowProgressIndicator extends SmoothProgressBar implements IRefreshNowIndicatorView {
 
@@ -29,11 +30,7 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.SmoothProgressBar, defStyle, 0);
 		final int color = a.getColor(R.styleable.SmoothProgressBar_spb_color, res.getColor(R.color.spb_default_color));
 		a.recycle();
-		final ShapeDrawable shape = new ShapeDrawable();
-		shape.setShape(new RectShape());
-		shape.getPaint().setColor(color);
-		final ClipDrawable clipDrawable = new ClipDrawable(shape, Gravity.CENTER, ClipDrawable.HORIZONTAL);
-		setProgressDrawable(clipDrawable);
+		setProgressColor(color);
 		setMax(100);
 		setIndeterminate(false);
 		updateVisibility();
@@ -59,6 +56,21 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		updateVisibility();
 	}
 
+	public void setIndeterminateProgressBuilder(final SmoothProgressDrawable.Builder builder) {
+		setIndeterminateDrawable(builder.build());
+	}
+
+	public void setProgressColor(final int color) {
+		final ShapeDrawable shape = new ShapeDrawable();
+		shape.setShape(new RectShape());
+		shape.getPaint().setColor(color);
+		final ClipDrawable clipDrawable = new ClipDrawable(shape, Gravity.CENTER, ClipDrawable.HORIZONTAL);
+		setProgressDrawable(clipDrawable);
+		final SmoothProgressDrawable.Builder builder = new SmoothProgressDrawable.Builder(getContext());
+		builder.color(color);
+		setIndeterminateProgressBuilder(builder);
+	}
+
 	private void updateVisibility() {
 		if (isIndeterminate()) {
 			setVisibility(VISIBLE);
@@ -66,5 +78,4 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 			setVisibility(getProgress() > 0 ? VISIBLE : GONE);
 		}
 	}
-
 }

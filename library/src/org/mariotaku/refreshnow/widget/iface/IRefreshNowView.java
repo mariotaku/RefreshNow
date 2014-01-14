@@ -51,6 +51,7 @@ public interface IRefreshNowView {
 		private final GestureDetector mGestureDetector;
 		private final OverScroller mScroller;
 		private boolean mIsDown;
+		private boolean mCanScrollVertically;
 
 		public Helper(final View view, final Context context, final AttributeSet attrs, final int defStyle) {
 			if (!(view instanceof IRefreshNowView))
@@ -72,17 +73,9 @@ public interface IRefreshNowView {
 			final int action = ev.getAction();
 			switch (action) {
 				case MotionEvent.ACTION_UP: {
-					if (mOverScrollY != 0) {
+					if (mOverScrollY != 0 && !mCanScrollVertically) {
 						cancelTouchEvent();
 					}
-					if (mIndicatorView != null) {
-						((IRefreshNowIndicatorView) mIndicatorView).setIsPulling(false);
-					}
-					mIsDown = false;
-					break;
-				}
-				case MotionEvent.ACTION_CANCEL: {
-					mIsDown = false;
 					break;
 				}
 				case MotionEvent.ACTION_DOWN: {
@@ -94,9 +87,17 @@ public interface IRefreshNowView {
 			}
 			mGestureDetector.onTouchEvent(ev);
 			final int scrollY = mView.getScrollY();
-			if ((action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) && scrollY != 0) {
-				mScroller.springBack(0, scrollY, 0, 0, 0, 0);
-				mView.postDelayed(new SpringBackRunnable(mView, mScroller), 16);
+			if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+				if (mIndicatorView != null) {
+					((IRefreshNowIndicatorView) mIndicatorView).setIsPulling(false);
+				}
+				mIsDown = false;
+				if (scrollY != 0) {
+					mScroller.springBack(0, scrollY, 0, 0, 0, 0);
+					mView.postDelayed(new SpringBackRunnable(this), 16);
+				} else if (mCanScrollVertically) {
+					resetOverScrollState();
+				}
 			}
 		}
 
@@ -119,7 +120,7 @@ public interface IRefreshNowView {
 
 		@Override
 		public boolean canOverScroll() {
-			return false;
+			return ((IRefreshNowView) mView).canOverScroll();
 		}
 
 		public int computeDeltaY(final int deltaY, final int scrollY, final boolean isTouchEvent) {
@@ -191,9 +192,10 @@ public interface IRefreshNowView {
 
 		@Override
 		public boolean onScroll(final MotionEvent e1, final MotionEvent e2, final float distanceX, final float distanceY) {
-			if (((IRefreshNowView) mView).canOverScroll() || !mIsDown) return true;
-			mOverScrollY = 0;
 			final int deltaY = Math.round(distanceY);
+			mCanScrollVertically = mView.canScrollVertically(deltaY);
+			if (canOverScroll() || !mIsDown) return true;
+			mOverScrollY = 0;
 			final int scrollY = mView.getScrollY();
 			Log.d(LOGTAG, String.format("Call overScrollVertically, scrollY: %d", scrollY));
 			if (Math.abs(scrollY) >= getMaxYOverscrollDistance()) {
@@ -214,6 +216,11 @@ public interface IRefreshNowView {
 		@Override
 		public boolean onSingleTapUp(final MotionEvent e) {
 			return true;
+		}
+
+		public void resetOverScrollState() {
+			mOverScrollY = 0;
+			dispatchPulled(0);
 		}
 
 		public void setFriction(final float friction) {
@@ -268,21 +275,26 @@ public interface IRefreshNowView {
 
 		private static class SpringBackRunnable implements Runnable {
 
+			private final Helper mHelper;
 			private final View mView;
 			private final OverScroller mScroller;
 
-			SpringBackRunnable(final View view, final OverScroller scroller) {
-				mView = view;
-				mScroller = scroller;
+			SpringBackRunnable(final Helper helper) {
+				mHelper = helper;
+				mView = helper.mView;
+				mScroller = helper.mScroller;
 			}
 
 			@Override
 			public void run() {
 				if (mScroller.computeScrollOffset()) {
-					mView.scrollTo(mView.getScrollX(), mScroller.getCurrY());
+					final int scrollY = mScroller.getCurrY();
+					mView.scrollTo(mView.getScrollX(), scrollY);
+					mHelper.dispatchPulled(scrollY);
 					mView.postDelayed(this, 16);
 				} else {
 					mView.scrollTo(mView.getScrollX(), 0);
+					mHelper.resetOverScrollState();
 				}
 			}
 		}

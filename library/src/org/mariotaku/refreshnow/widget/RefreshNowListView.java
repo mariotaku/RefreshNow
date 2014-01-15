@@ -41,7 +41,7 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	public void setConfig(final Config config) {
+	public void setConfig(final RefreshNowConfig config) {
 		mHelper.setConfig(config);
 	}
 

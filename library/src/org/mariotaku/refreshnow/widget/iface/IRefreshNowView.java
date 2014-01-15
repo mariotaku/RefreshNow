@@ -2,13 +2,13 @@ package org.mariotaku.refreshnow.widget.iface;
 
 import org.mariotaku.refreshnow.widget.OnRefreshListener;
 import org.mariotaku.refreshnow.widget.RefreshMode;
+import org.mariotaku.refreshnow.widget.RefreshNowConfig;
 import org.mariotaku.refreshnow.widget.internal.MotionEventProcessor;
 import org.mariotaku.refreshnow.widget.internal.MotionEventProcessor.OnGestureEventListener;
 
 import android.content.Context;
 import android.os.SystemClock;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.OverScroller;
@@ -21,7 +21,7 @@ public interface IRefreshNowView {
 
 	public boolean isRefreshing();
 
-	public void setConfig(Config config);
+	public void setConfig(RefreshNowConfig config);
 
 	public void setOnRefreshListener(OnRefreshListener listener);
 
@@ -32,47 +32,6 @@ public interface IRefreshNowView {
 	public void setRefreshing(boolean refreshing);
 
 	public void setRefreshMode(RefreshMode mode);
-
-	public static final class Config {
-
-		public static final int MAX_OVERSCROLL_DISTANCE = 48;
-
-		private int maxOverScrollDistance;
-
-		private Config() {
-
-		}
-
-		public static final class Builder {
-
-			private final float density;
-			private boolean configBuilt;
-			private final Config config;
-
-			public Builder(final Context context) {
-				final DisplayMetrics dm = context.getResources().getDisplayMetrics();
-				config = new Config();
-				density = dm.density;
-				maxOverScrollDistance(MAX_OVERSCROLL_DISTANCE);
-			}
-
-			public Config build() {
-				configBuilt = true;
-				return config;
-			}
-
-			public Builder maxOverScrollDistance(final int distanceDp) {
-				checkNotBuilt();
-				config.maxOverScrollDistance = Math.round(distanceDp * density);
-				return this;
-			}
-
-			private void checkNotBuilt() {
-				if (configBuilt) throw new IllegalStateException("build() already called!");
-			}
-
-		}
-	}
 
 	public static final class Helper implements IRefreshNowView, OnGestureEventListener {
 
@@ -85,7 +44,7 @@ public interface IRefreshNowView {
 		private OnRefreshListener mRefreshListener;
 
 		private RefreshMode mRefreshMode;
-		private Config mConfig;
+		private RefreshNowConfig mConfig;
 		private boolean mIsRefreshing;
 
 		private int mPreviousScrollY;
@@ -93,7 +52,7 @@ public interface IRefreshNowView {
 		public Helper(final View view, final Context context, final AttributeSet attrs, final int defStyle) {
 			if (!(view instanceof IRefreshNowView))
 				throw new IllegalArgumentException("this view instance must implement IRefreshNowView");
-			mConfig = new Config.Builder(context).build();
+			mConfig = new RefreshNowConfig.Builder(context).build();
 			mView = view;
 			mEventProcessor = new MotionEventProcessor(context, this);
 			mScroller = new OverScroller(context);
@@ -109,7 +68,7 @@ public interface IRefreshNowView {
 				((IRefreshNowIndicatorView) mIndicatorView).onPulled(0);
 				return;
 			}
-			final float pullPercent = Math.abs((float) scrollY) / mConfig.maxOverScrollDistance;
+			final float pullPercent = Math.abs((float) scrollY) / mConfig.getMaxOverScrollDistance();
 			if (mIndicatorView != null) {
 				((IRefreshNowIndicatorView) mIndicatorView).onPulled(pullPercent);
 			}
@@ -150,7 +109,7 @@ public interface IRefreshNowView {
 			}
 			mPreviousScrollY = scrollY;
 			if (canScrollVertically && scrollY == 0) return result;
-			if (Math.abs(scrollY) >= mConfig.maxOverScrollDistance) {
+			if (Math.abs(scrollY) >= mConfig.getMaxOverScrollDistance()) {
 				cancelTouchEvent();
 				dispatchRefreshStart(scrollY);
 			} else if (error) {
@@ -184,7 +143,7 @@ public interface IRefreshNowView {
 		}
 
 		@Override
-		public void setConfig(final Config config) {
+		public void setConfig(final RefreshNowConfig config) {
 			if (config == null) throw new NullPointerException();
 			mConfig = config;
 		}
@@ -247,9 +206,11 @@ public interface IRefreshNowView {
 			if (isTouchEvent && mIsRefreshing) return 0;
 			if (isTouchEvent && scrollY == 0 && deltaY < 0 && !mRefreshMode.hasStart()) return 0;
 			if (isTouchEvent && scrollY == 0 && deltaY > 0 && !mRefreshMode.hasEnd()) return 0;
-			final float pullPercent = Math.abs((float) scrollY) / mConfig.maxOverScrollDistance;
-			final int factor = 2 + Math.round(pullPercent * 3);
-			return isTouchEvent ? deltaY / factor : deltaY;
+			final float pullPercent = Math.abs((float) scrollY) / mConfig.getMaxOverScrollDistance();
+			final int divisorMin = Math.max(1, mConfig.getMinPullDivisor());
+			final int divisorExtra = Math.max(0, mConfig.getExtraPullDivisor());
+			final int divisorTotal = divisorMin + Math.round(pullPercent * divisorExtra);
+			return isTouchEvent ? deltaY / divisorTotal : deltaY;
 		}
 
 		private static class SpringBackRunnable implements Runnable {

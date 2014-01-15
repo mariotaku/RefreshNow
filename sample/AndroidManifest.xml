@@ -22,6 +22,21 @@
 				<category android:name="android.intent.category.LAUNCHER"/>
 			</intent-filter>
 		</activity>
+		<activity
+			android:name=".BasicUsageActivity"
+			android:label="Basic usage"/>
+		<activity
+			android:name=".StyledByCodeActivity"
+			android:label="Styled (by code)"/>
+		<activity
+			android:name=".StyledByXMLActivity"
+			android:label="Styled (by XML)"/>
+		<activity
+			android:name=".PullUpOnlyActivity"
+			android:label="Refresh mode (pull up)"/>
+		<activity
+			android:name=".CustomConfigActivity"
+			android:label="Custom config"/>
 	</application>
 
 </manifest>

@@ -37,7 +37,7 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		final int width = a.getDimensionPixelSize(R.styleable.SmoothProgressBar_spb_stroke_width,
 				R.dimen.spb_default_stroke_width);
 		a.recycle();
-		final Config.Builder builder = new Config.Builder(context);
+		final IndicatorConfig.Builder builder = new IndicatorConfig.Builder(context);
 		builder.progressColor(color);
 		builder.progressWidth(width);
 		setConfig(builder.build());
@@ -66,7 +66,7 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		updateVisibility();
 	}
 
-	public void setConfig(final Config config) {
+	public void setConfig(final IndicatorConfig config) {
 		final Drawable progressDrawable = config.getProgressDrawable();
 		if (progressDrawable != null) {
 			setProgressDrawable(progressDrawable);
@@ -90,12 +90,12 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		}
 	}
 
-	public static final class Config {
+	public static final class IndicatorConfig {
 
 		private final Drawable progressDrawable;
 		private final Drawable indeterminateDrawable;
 
-		private Config(final Drawable progressDrawable, final Drawable indeterminateDrawable) {
+		private IndicatorConfig(final Drawable progressDrawable, final Drawable indeterminateDrawable) {
 			this.progressDrawable = progressDrawable;
 			this.indeterminateDrawable = indeterminateDrawable;
 		}
@@ -120,13 +120,13 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 				progressColor(context.getResources().getColor(R.color.spb_default_color));
 			}
 
-			public Config build() {
+			public IndicatorConfig build() {
 				final LineDrawable line = new LineDrawable();
 				line.setColor(progressColor);
 				line.setStrokeWidth(progressWidth);
 				final ClipDrawable progressDrawable = new ClipDrawable(line, Gravity.CENTER_VERTICAL,
 						ClipDrawable.HORIZONTAL);
-				return new Config(changeProgressDrawable ? progressDrawable : null,
+				return new IndicatorConfig(changeProgressDrawable ? progressDrawable : null,
 						changeIndeterminateDrawable ? indeterminateDrawableBuilder.build() : null);
 			}
 

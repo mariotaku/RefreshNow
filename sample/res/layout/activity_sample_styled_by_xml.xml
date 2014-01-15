@@ -1,7 +1,7 @@
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	xmlns:tools="http://schemas.android.com/tools"
-	tools:context=".MainActivity">
+	tools:context=".BasicUsageActivity">
 
 	<org.mariotaku.refreshnow.widget.RefreshNowListView
 		android:id="@android:id/list"

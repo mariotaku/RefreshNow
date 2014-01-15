@@ -17,13 +17,11 @@ public interface IRefreshNowView {
 
 	public static final String REFRESHNOW_LOGTAG = "RefreshNow";
 
-	public boolean canOverScroll();
-
 	public RefreshMode getRefreshMode();
 
-	public boolean isOverScrolling();
-
 	public boolean isRefreshing();
+
+	public void setConfig(Config config);
 
 	public void setOnRefreshListener(OnRefreshListener listener);
 
@@ -35,9 +33,48 @@ public interface IRefreshNowView {
 
 	public void setRefreshMode(RefreshMode mode);
 
-	public class Helper implements IRefreshNowView, OnGestureListener {
+	public static final class Config {
 
-		private static final int MAX_Y_OVERSCROLL_DISTANCE = 48;
+		public static final int MAX_OVERSCROLL_DISTANCE = 48;
+
+		private int maxOverScrollDistance;
+
+		private Config() {
+
+		}
+
+		public static final class Builder {
+
+			private final float density;
+			private boolean configBuilt;
+			private final Config config;
+
+			public Builder(final Context context) {
+				final DisplayMetrics dm = context.getResources().getDisplayMetrics();
+				config = new Config();
+				density = dm.density;
+				maxOverScrollDistance(MAX_OVERSCROLL_DISTANCE);
+			}
+
+			public Config build() {
+				configBuilt = true;
+				return config;
+			}
+
+			public Builder maxOverScrollDistance(final int distanceDp) {
+				checkNotBuilt();
+				config.maxOverScrollDistance = Math.round(distanceDp * density);
+				return this;
+			}
+
+			private void checkNotBuilt() {
+				if (configBuilt) throw new IllegalStateException("build() already called!");
+			}
+
+		}
+	}
+
+	public static final class Helper implements IRefreshNowView, OnGestureListener {
 
 		private final View mView;
 		private View mIndicatorView;
@@ -47,19 +84,16 @@ public interface IRefreshNowView {
 		private final OverScroller mScroller;
 
 		private RefreshMode mRefreshMode;
-		private final int mMaxYOverscrollDistance;
 
 		private boolean mIsRefreshing;
-		private boolean mIsDown;
+		private Config mConfig;
 
 		public Helper(final View view, final Context context, final AttributeSet attrs, final int defStyle) {
 			if (!(view instanceof IRefreshNowView))
 				throw new IllegalArgumentException("this view instance must implement IRefreshNowView");
+			mConfig = new Config.Builder(context).build();
 			mView = view;
 			mGestureDetector = new GestureDetector(context, this);
-			final DisplayMetrics metrics = view.getResources().getDisplayMetrics();
-			final float density = metrics.density;
-			mMaxYOverscrollDistance = (int) (density * MAX_Y_OVERSCROLL_DISTANCE);
 			mScroller = new OverScroller(context);
 			setRefreshMode(RefreshMode.BOTH);
 		}
@@ -71,21 +105,10 @@ public interface IRefreshNowView {
 					mScroller.forceFinished(true);
 					break;
 				}
-				case MotionEvent.ACTION_UP: {
-					mIsDown = false;
-					final int scrollY = mView.getScrollY();
-					if (scrollY != 0) {
-						if (canOverScroll()) {
-							cancelTouchEvent();
-						} else {
-							mScroller.springBack(0, scrollY, 0, 0, 0, 0);
-							mView.postDelayed(new SpringBackRunnable(this), 16);
-						}
-					}
-				}
+				case MotionEvent.ACTION_UP:
 				case MotionEvent.ACTION_CANCEL: {
 					final int scrollY = mView.getScrollY();
-					if (scrollY != 0 && !canOverScroll()) {
+					if (scrollY != 0) {
 						mScroller.springBack(0, scrollY, 0, 0, 0, 0);
 						mView.postDelayed(new SpringBackRunnable(this), 16);
 					}
@@ -95,47 +118,16 @@ public interface IRefreshNowView {
 			mGestureDetector.onTouchEvent(ev);
 		}
 
-		public void beforeOverScrollBy(final int deltaX, final int deltaY, final int scrollX, final int scrollY,
-				final int scrollRangeX, final int scrollRangeY, final int maxOverScrollX, final int maxOverScrollY,
-				final boolean isTouchEvent) {
-			if (Math.abs(scrollY) >= mMaxYOverscrollDistance && scrollY != 0 && isTouchEvent) {
-				cancelTouchEvent();
-				dispatchRefreshStart(scrollY);
-			}
-		}
-
-		public void cancelTouchEvent() {
-			final long time = SystemClock.uptimeMillis();
-			mView.dispatchTouchEvent(MotionEvent.obtain(time, time, MotionEvent.ACTION_CANCEL, 0, 0, 0));
-		}
-
-		@Override
-		public boolean canOverScroll() {
-			return ((IRefreshNowView) mView).canOverScroll();
-		}
-
-		public int computeDeltaY(final int deltaY, final int scrollY, final boolean isTouchEvent) {
-			if (isTouchEvent && mIsRefreshing) return 0;
-			if (isTouchEvent && scrollY == 0 && deltaY < 0 && !mRefreshMode.hasStart()) return 0;
-			if (isTouchEvent && scrollY == 0 && deltaY > 0 && !mRefreshMode.hasEnd()) return 0;
-			final float pullPercent = Math.abs((float) scrollY) / mMaxYOverscrollDistance;
-			final int factor = 2 + Math.round(pullPercent * 3);
-			return isTouchEvent ? deltaY / factor : deltaY;
-		}
-
-		public void dispatchOnOverScrolled(final int scrollX, final int scrollY, final boolean clampedX,
-				final boolean clampedY) {
-			if (!canOverScroll()) return;
-			dispatchPulled(scrollY);
-		}
-
 		public void dispatchOnScrollChanged(final int l, final int t, final int oldl, final int oldt) {
-			if (canOverScroll()) return;
 			dispatchPulled(mView.getScrollY());
 		}
 
 		public void dispatchPulled(final int scrollY) {
-			final float pullPercent = Math.abs((float) scrollY) / mMaxYOverscrollDistance;
+			if (mRefreshMode == RefreshMode.NONE) {
+				((IRefreshNowIndicatorView) mIndicatorView).onPulled(0);
+				return;
+			}
+			final float pullPercent = Math.abs((float) scrollY) / mConfig.maxOverScrollDistance;
 			if (mIndicatorView != null) {
 				((IRefreshNowIndicatorView) mIndicatorView).onPulled(pullPercent);
 			}
@@ -149,18 +141,9 @@ public interface IRefreshNowView {
 			((IRefreshNowView) mView).setRefreshing(true);
 		}
 
-		public int getMaxYOverscrollDistance() {
-			return mMaxYOverscrollDistance;
-		}
-
 		@Override
 		public RefreshMode getRefreshMode() {
 			return mRefreshMode;
-		}
-
-		@Override
-		public boolean isOverScrolling() {
-			return ((IRefreshNowView) mView).isOverScrolling();
 		}
 
 		@Override
@@ -170,7 +153,6 @@ public interface IRefreshNowView {
 
 		@Override
 		public boolean onDown(final MotionEvent e) {
-			mIsDown = true;
 			return true;
 		}
 
@@ -186,14 +168,9 @@ public interface IRefreshNowView {
 
 		@Override
 		public boolean onScroll(final MotionEvent e1, final MotionEvent e2, final float distanceX, final float distanceY) {
-			final int deltaY = Math.round(distanceY);
-			final boolean canOverScroll = canOverScroll();
-			if (canOverScroll && !isOverScrolling()) {
-				dispatchPulled(0);
-			}
-			if (canOverScroll || !mIsDown) return true;
-			final int scrollY = mView.getScrollY();
-			if (Math.abs(scrollY) >= getMaxYOverscrollDistance()) {
+			final int deltaY = Math.round(distanceY), scrollY = mView.getScrollY();
+			if (mView.canScrollVertically(deltaY) && scrollY == 0) return true;
+			if (Math.abs(scrollY) >= mConfig.maxOverScrollDistance) {
 				cancelTouchEvent();
 				dispatchRefreshStart(scrollY);
 			} else {
@@ -210,6 +187,12 @@ public interface IRefreshNowView {
 		@Override
 		public boolean onSingleTapUp(final MotionEvent e) {
 			return true;
+		}
+
+		@Override
+		public void setConfig(final Config config) {
+			if (config == null) throw new NullPointerException();
+			mConfig = config;
 		}
 
 		public void setFriction(final float friction) {
@@ -251,6 +234,20 @@ public interface IRefreshNowView {
 		@Override
 		public void setRefreshMode(final RefreshMode mode) {
 			mRefreshMode = mode;
+		}
+
+		private void cancelTouchEvent() {
+			final long time = SystemClock.uptimeMillis();
+			mView.dispatchTouchEvent(MotionEvent.obtain(time, time, MotionEvent.ACTION_CANCEL, 0, 0, 0));
+		}
+
+		private int computeDeltaY(final int deltaY, final int scrollY, final boolean isTouchEvent) {
+			if (isTouchEvent && mIsRefreshing) return 0;
+			if (isTouchEvent && scrollY == 0 && deltaY < 0 && !mRefreshMode.hasStart()) return 0;
+			if (isTouchEvent && scrollY == 0 && deltaY > 0 && !mRefreshMode.hasEnd()) return 0;
+			final float pullPercent = Math.abs((float) scrollY) / mConfig.maxOverScrollDistance;
+			final int factor = 2 + Math.round(pullPercent * 3);
+			return isTouchEvent ? deltaY / factor : deltaY;
 		}
 
 		private static class SpringBackRunnable implements Runnable {

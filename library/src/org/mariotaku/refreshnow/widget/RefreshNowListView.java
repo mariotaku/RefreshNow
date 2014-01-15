@@ -26,27 +26,8 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	public boolean canOverScroll() {
-		final int childCount = getChildCount(), count = getCount();
-		if (childCount == 0) return false;
-		if (count > childCount)
-			return true;
-		else {
-			final View firstVisibleChild = getChildAt(0);
-			final View lastVisibleChild = getChildAt(childCount - 1);
-			return firstVisibleChild.getTop() < 0 || lastVisibleChild.getBottom() > getBottom();
-		}
-	}
-
-	@Override
 	public RefreshMode getRefreshMode() {
 		return mHelper.getRefreshMode();
-	}
-
-	@Override
-	public boolean isOverScrolling() {
-		if (!canOverScroll()) return false;
-		return getScrollY() != 0;
 	}
 
 	@Override
@@ -61,15 +42,8 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	public void scrollBy(final int x, final int y) {
-		if (canOverScroll()) return;
-		super.scrollBy(x, y);
-	}
-
-	@Override
-	public void scrollTo(final int x, final int y) {
-		if (canOverScroll()) return;
-		super.scrollTo(x, y);
+	public void setConfig(final Config config) {
+		mHelper.setConfig(config);
 	}
 
 	@Override
@@ -104,12 +78,6 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	protected void onOverScrolled(final int scrollX, final int scrollY, final boolean clampedX, final boolean clampedY) {
-		super.onOverScrolled(scrollX, scrollY, clampedX, clampedY);
-		mHelper.dispatchOnOverScrolled(scrollX, scrollY, clampedX, clampedY);
-	}
-
-	@Override
 	protected void onScrollChanged(final int l, final int t, final int oldl, final int oldt) {
 		super.onScrollChanged(l, t, oldl, oldt);
 		mHelper.dispatchOnScrollChanged(l, t, oldl, oldt);
@@ -119,12 +87,7 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	protected boolean overScrollBy(final int deltaX, final int deltaY, final int scrollX, final int scrollY,
 			final int scrollRangeX, final int scrollRangeY, final int maxOverScrollX, final int maxOverScrollY,
 			final boolean isTouchEvent) {
-		if (!canOverScroll()) return true;
-		mHelper.beforeOverScrollBy(deltaX, deltaY, scrollX, scrollY, scrollRangeX, scrollRangeY, maxOverScrollX,
-				maxOverScrollY, isTouchEvent);
-		final int computedDy = mHelper.computeDeltaY(deltaY, scrollY, isTouchEvent);
-		return super.overScrollBy(deltaX, computedDy, scrollX, scrollY, scrollRangeX, scrollRangeY, maxOverScrollX,
-				mHelper.getMaxYOverscrollDistance(), isTouchEvent);
+		return true;
 	}
 
 }

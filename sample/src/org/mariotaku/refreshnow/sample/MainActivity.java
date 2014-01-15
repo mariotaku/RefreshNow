@@ -9,6 +9,7 @@ import org.mariotaku.refreshnow.widget.RefreshNowListView;
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.View;
 import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
@@ -54,6 +55,7 @@ public class MainActivity extends Activity implements OnRefreshListener {
 		mListView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, objects));
 		mListView.setOnRefreshListener(this);
 		mListView.setRefreshIndicatorView(findViewById(android.R.id.progress));
+		mListView.setOverScrollMode(View.OVER_SCROLL_NEVER);
 	}
 
 }

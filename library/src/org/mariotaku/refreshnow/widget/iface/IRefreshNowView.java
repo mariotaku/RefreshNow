@@ -189,7 +189,7 @@ public interface IRefreshNowView {
 			final int deltaY = Math.round(distanceY);
 			final boolean canOverScroll = canOverScroll();
 			if (canOverScroll && !isOverScrolling()) {
-				// resetOverScrollState();
+				dispatchPulled(0);
 			}
 			if (canOverScroll || !mIsDown) return true;
 			final int scrollY = mView.getScrollY();

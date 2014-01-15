@@ -2,13 +2,13 @@ package org.mariotaku.refreshnow.widget.iface;
 
 import org.mariotaku.refreshnow.widget.OnRefreshListener;
 import org.mariotaku.refreshnow.widget.RefreshMode;
+import org.mariotaku.refreshnow.widget.internal.MotionEventProcessor;
+import org.mariotaku.refreshnow.widget.internal.MotionEventProcessor.OnGestureEventListener;
 
 import android.content.Context;
 import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.view.GestureDetector;
-import android.view.GestureDetector.OnGestureListener;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.OverScroller;
@@ -74,48 +74,30 @@ public interface IRefreshNowView {
 		}
 	}
 
-	public static final class Helper implements IRefreshNowView, OnGestureListener {
+	public static final class Helper implements IRefreshNowView, OnGestureEventListener {
 
 		private final View mView;
 		private View mIndicatorView;
 
-		private OnRefreshListener mRefreshListener;
-		private final GestureDetector mGestureDetector;
+		private final MotionEventProcessor mEventProcessor;
 		private final OverScroller mScroller;
 
-		private RefreshMode mRefreshMode;
+		private OnRefreshListener mRefreshListener;
 
-		private boolean mIsRefreshing;
+		private RefreshMode mRefreshMode;
 		private Config mConfig;
+		private boolean mIsRefreshing;
+
+		private int mScrollY;
 
 		public Helper(final View view, final Context context, final AttributeSet attrs, final int defStyle) {
 			if (!(view instanceof IRefreshNowView))
 				throw new IllegalArgumentException("this view instance must implement IRefreshNowView");
 			mConfig = new Config.Builder(context).build();
 			mView = view;
-			mGestureDetector = new GestureDetector(context, this);
+			mEventProcessor = new MotionEventProcessor(this);
 			mScroller = new OverScroller(context);
 			setRefreshMode(RefreshMode.BOTH);
-		}
-
-		public void beforeOnTouchEvent(final MotionEvent ev) {
-			final int action = ev.getAction();
-			switch (action) {
-				case MotionEvent.ACTION_DOWN: {
-					mScroller.forceFinished(true);
-					break;
-				}
-				case MotionEvent.ACTION_UP:
-				case MotionEvent.ACTION_CANCEL: {
-					final int scrollY = mView.getScrollY();
-					if (scrollY != 0) {
-						mScroller.springBack(0, scrollY, 0, 0, 0, 0);
-						mView.postDelayed(new SpringBackRunnable(this), 16);
-					}
-					break;
-				}
-			}
-			mGestureDetector.onTouchEvent(ev);
 		}
 
 		public void dispatchOnScrollChanged(final int l, final int t, final int oldl, final int oldt) {
@@ -152,41 +134,47 @@ public interface IRefreshNowView {
 		}
 
 		@Override
-		public boolean onDown(final MotionEvent e) {
-			return true;
-		}
-
-		@Override
-		public boolean onFling(final MotionEvent e1, final MotionEvent e2, final float velocityX, final float velocityY) {
-			return true;
-		}
-
-		@Override
-		public void onLongPress(final MotionEvent e) {
-
-		}
-
-		@Override
-		public boolean onScroll(final MotionEvent e1, final MotionEvent e2, final float distanceX, final float distanceY) {
+		public MotionEvent onScroll(final MotionEvent ev, final float distanceX, final float distanceY) {
 			final int deltaY = Math.round(distanceY), scrollY = mView.getScrollY();
-			if (mView.canScrollVertically(deltaY) && scrollY == 0) return true;
+			final boolean canScrollVertically = mView.canScrollVertically(deltaY);
+			final boolean error = scrollY != 0 && mView.canScrollVertically(scrollY);
+			final MotionEvent result;
+			if (scrollY == 0 && mScrollY != 0 && canScrollVertically) {
+				result = MotionEvent.obtain(ev);
+				result.setAction(MotionEvent.ACTION_DOWN);
+			} else if (scrollY != 0 && mScrollY == 0) {
+				result = MotionEvent.obtain(ev);
+				result.setAction(MotionEvent.ACTION_UP);
+			} else {
+				result = ev;
+			}
+			mScrollY = scrollY;
+			if (canScrollVertically && scrollY == 0) return result;
 			if (Math.abs(scrollY) >= mConfig.maxOverScrollDistance) {
 				cancelTouchEvent();
 				dispatchRefreshStart(scrollY);
+			} else if (error) {
+				mView.scrollTo(0, 0);
 			} else {
 				mView.scrollBy(0, computeDeltaY(deltaY, scrollY, true));
 			}
-			return true;
+			return result;
 		}
 
-		@Override
-		public void onShowPress(final MotionEvent e) {
-
-		}
-
-		@Override
-		public boolean onSingleTapUp(final MotionEvent e) {
-			return true;
+		public MotionEvent processOnTouchEvent(final MotionEvent ev) {
+			final int action = ev.getAction();
+			switch (action) {
+				case MotionEvent.ACTION_DOWN: {
+					mScroller.forceFinished(true);
+					break;
+				}
+				case MotionEvent.ACTION_UP:
+				case MotionEvent.ACTION_CANCEL: {
+					cancelPullToRefresh();
+					break;
+				}
+			}
+			return mEventProcessor.onTouchEvent(ev);
 		}
 
 		@Override
@@ -234,6 +222,14 @@ public interface IRefreshNowView {
 		@Override
 		public void setRefreshMode(final RefreshMode mode) {
 			mRefreshMode = mode;
+		}
+
+		private void cancelPullToRefresh() {
+			final int scrollY = mView.getScrollY();
+			if (scrollY != 0) {
+				mScroller.springBack(0, scrollY, 0, 0, 0, 0);
+				mView.postDelayed(new SpringBackRunnable(this), 16);
+			}
 		}
 
 		private void cancelTouchEvent() {

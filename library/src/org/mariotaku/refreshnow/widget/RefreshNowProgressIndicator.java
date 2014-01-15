@@ -35,14 +35,14 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		final Config.Builder builder = new Config.Builder(context);
 		builder.progressColor(color);
 		setConfig(builder.build());
-		setMax(100);
+		setMax(1000);
 		setIndeterminate(false);
 		updateVisibility();
 	}
 
 	@Override
 	public void onPulled(final float percent) {
-		setProgress(Math.round(percent * 100));
+		setProgress(Math.round(percent * getMax()));
 		updateVisibility();
 	}
 
@@ -69,6 +69,11 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		if (indeterminateDrawable != null) {
 			setIndeterminateDrawable(indeterminateDrawable);
 		}
+	}
+
+	@Override
+	protected void onSizeChanged(final int w, final int h, final int oldw, final int oldh) {
+		super.onSizeChanged(w, h, oldw, oldh);
 	}
 
 	private void updateVisibility() {

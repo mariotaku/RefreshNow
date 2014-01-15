@@ -6,10 +6,13 @@ import org.mariotaku.refreshnow.widget.iface.IRefreshNowIndicatorView;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.drawable.ClipDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.ShapeDrawable;
-import android.graphics.drawable.shapes.RectShape;
 import android.util.AttributeSet;
 import android.view.Gravity;
 import android.view.animation.Interpolator;
@@ -31,9 +34,12 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		final Resources res = context.getResources();
 		final TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.SmoothProgressBar, defStyle, 0);
 		final int color = a.getColor(R.styleable.SmoothProgressBar_spb_color, res.getColor(R.color.spb_default_color));
+		final int width = a.getDimensionPixelSize(R.styleable.SmoothProgressBar_spb_stroke_width,
+				R.dimen.spb_default_stroke_width);
 		a.recycle();
 		final Config.Builder builder = new Config.Builder(context);
 		builder.progressColor(color);
+		builder.progressWidth(width);
 		setConfig(builder.build());
 		setMax(1000);
 		setIndeterminate(false);
@@ -105,8 +111,9 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		public static final class Builder {
 
 			private final SmoothProgressDrawable.Builder indeterminateDrawableBuilder;
-			private int progressColor;
 			private boolean changeProgressDrawable, changeIndeterminateDrawable;
+			private int progressColor;
+			private int progressWidth;
 
 			public Builder(final Context context) {
 				indeterminateDrawableBuilder = new SmoothProgressDrawable.Builder(context);
@@ -114,10 +121,11 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 			}
 
 			public Config build() {
-				final ShapeDrawable shape = new ShapeDrawable();
-				shape.setShape(new RectShape());
-				shape.getPaint().setColor(progressColor);
-				final ClipDrawable progressDrawable = new ClipDrawable(shape, Gravity.CENTER, ClipDrawable.HORIZONTAL);
+				final LineDrawable line = new LineDrawable();
+				line.setColor(progressColor);
+				line.setStrokeWidth(progressWidth);
+				final ClipDrawable progressDrawable = new ClipDrawable(line, Gravity.CENTER_VERTICAL,
+						ClipDrawable.HORIZONTAL);
 				return new Config(changeProgressDrawable ? progressDrawable : null,
 						changeIndeterminateDrawable ? indeterminateDrawableBuilder.build() : null);
 			}
@@ -144,6 +152,12 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 				return this;
 			}
 
+			public Builder indeterminateWidth(final int width) {
+				indeterminateDrawableBuilder.width(width);
+				changeIndeterminateDrawable = true;
+				return this;
+			}
+
 			public Builder interpolator(final Interpolator interpolator) {
 				indeterminateDrawableBuilder.interpolator(interpolator);
 				changeIndeterminateDrawable = true;
@@ -158,6 +172,12 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 
 			public Builder progressColor(final int color) {
 				progressColor = color;
+				changeProgressDrawable = true;
+				return this;
+			}
+
+			public Builder progressWidth(final int width) {
+				progressWidth = width;
 				changeProgressDrawable = true;
 				return this;
 			}
@@ -186,10 +206,47 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 				return this;
 			}
 
-			public Builder width(final int width) {
-				indeterminateDrawableBuilder.width(width);
-				changeIndeterminateDrawable = true;
-				return this;
+		}
+
+		private static final class LineDrawable extends Drawable {
+
+			private final Paint paint;
+
+			private LineDrawable() {
+				paint = new Paint();
+			}
+
+			@Override
+			public void draw(final Canvas canvas) {
+				final Rect bounds = getBounds();
+				final int centerY = bounds.centerY();
+				canvas.drawLine(bounds.left, centerY, bounds.right, centerY, paint);
+			}
+
+			@Override
+			public int getOpacity() {
+				final int alpha = paint.getAlpha();
+				if (alpha == 0) return PixelFormat.TRANSPARENT;
+				if (alpha == 0xff) return PixelFormat.OPAQUE;
+				return PixelFormat.TRANSLUCENT;
+			}
+
+			@Override
+			public void setAlpha(final int alpha) {
+				paint.setAlpha(alpha);
+			}
+
+			public void setColor(final int color) {
+				paint.setColor(color);
+			}
+
+			@Override
+			public void setColorFilter(final ColorFilter cf) {
+				paint.setColorFilter(cf);
+			}
+
+			public void setStrokeWidth(final int width) {
+				paint.setStrokeWidth(width);
 			}
 
 		}

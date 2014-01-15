@@ -88,14 +88,14 @@ public interface IRefreshNowView {
 		private Config mConfig;
 		private boolean mIsRefreshing;
 
-		private int mScrollY;
+		private int mPreviousScrollY;
 
 		public Helper(final View view, final Context context, final AttributeSet attrs, final int defStyle) {
 			if (!(view instanceof IRefreshNowView))
 				throw new IllegalArgumentException("this view instance must implement IRefreshNowView");
 			mConfig = new Config.Builder(context).build();
 			mView = view;
-			mEventProcessor = new MotionEventProcessor(this);
+			mEventProcessor = new MotionEventProcessor(context, this);
 			mScroller = new OverScroller(context);
 			setRefreshMode(RefreshMode.BOTH);
 		}
@@ -139,16 +139,16 @@ public interface IRefreshNowView {
 			final boolean canScrollVertically = mView.canScrollVertically(deltaY);
 			final boolean error = scrollY != 0 && mView.canScrollVertically(scrollY);
 			final MotionEvent result;
-			if (scrollY == 0 && mScrollY != 0 && canScrollVertically) {
+			if (scrollY == 0 && mPreviousScrollY != 0 && canScrollVertically) {
 				result = MotionEvent.obtain(ev);
 				result.setAction(MotionEvent.ACTION_DOWN);
-			} else if (scrollY != 0 && mScrollY == 0) {
+			} else if (scrollY != 0 && mPreviousScrollY == 0) {
 				result = MotionEvent.obtain(ev);
 				result.setAction(MotionEvent.ACTION_UP);
 			} else {
 				result = ev;
 			}
-			mScrollY = scrollY;
+			mPreviousScrollY = scrollY;
 			if (canScrollVertically && scrollY == 0) return result;
 			if (Math.abs(scrollY) >= mConfig.maxOverScrollDistance) {
 				cancelTouchEvent();
@@ -159,6 +159,12 @@ public interface IRefreshNowView {
 				mView.scrollBy(0, computeDeltaY(deltaY, scrollY, true));
 			}
 			return result;
+		}
+
+		@Override
+		public MotionEvent onUp(final MotionEvent ev) {
+			mPreviousScrollY = 0;
+			return ev;
 		}
 
 		public MotionEvent processOnTouchEvent(final MotionEvent ev) {

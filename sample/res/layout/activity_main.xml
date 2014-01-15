@@ -12,7 +12,6 @@
 		android:id="@android:id/progress"
 		android:layout_width="match_parent"
 		android:layout_height="3dp"
-		android:padding="0dp"
 		app:spb_color="@integer/google_green"
 		app:spb_colors="@array/gplus_colors"
 		app:spb_interpolator="spb_interpolator_acceleratedecelerate"

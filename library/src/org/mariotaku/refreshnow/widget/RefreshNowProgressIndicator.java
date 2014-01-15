@@ -39,7 +39,7 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 		a.recycle();
 		final IndicatorConfig.Builder builder = new IndicatorConfig.Builder(context);
 		builder.progressColor(color);
-		builder.progressWidth(width);
+		builder.progressStrokeWidth(width);
 		setConfig(builder.build());
 		setMax(1000);
 		setIndeterminate(false);
@@ -113,17 +113,19 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 			private final SmoothProgressDrawable.Builder indeterminateDrawableBuilder;
 			private boolean changeProgressDrawable, changeIndeterminateDrawable;
 			private int progressColor;
-			private int progressWidth;
+			private float progressStrokeWidth;
 
 			public Builder(final Context context) {
 				indeterminateDrawableBuilder = new SmoothProgressDrawable.Builder(context);
-				progressColor(context.getResources().getColor(R.color.spb_default_color));
+				final Resources res = context.getResources();
+				progressColor(res.getColor(R.color.spb_default_color));
+				progressStrokeWidth(res.getDimensionPixelSize(R.dimen.spb_default_stroke_width));
 			}
 
 			public IndicatorConfig build() {
 				final LineDrawable line = new LineDrawable();
 				line.setColor(progressColor);
-				line.setStrokeWidth(progressWidth);
+				line.setStrokeWidth(progressStrokeWidth);
 				final ClipDrawable progressDrawable = new ClipDrawable(line, Gravity.CENTER_VERTICAL,
 						ClipDrawable.HORIZONTAL);
 				return new IndicatorConfig(changeProgressDrawable ? progressDrawable : null,
@@ -152,8 +154,8 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 				return this;
 			}
 
-			public Builder indeterminateWidth(final int width) {
-				indeterminateDrawableBuilder.width(width);
+			public Builder indeterminateStrokeWidth(final float width) {
+				indeterminateDrawableBuilder.strokeWidth(width);
 				changeIndeterminateDrawable = true;
 				return this;
 			}
@@ -176,8 +178,8 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 				return this;
 			}
 
-			public Builder progressWidth(final int width) {
-				progressWidth = width;
+			public Builder progressStrokeWidth(final float width) {
+				progressStrokeWidth = width;
 				changeProgressDrawable = true;
 				return this;
 			}
@@ -245,7 +247,7 @@ public class RefreshNowProgressIndicator extends SmoothProgressBar implements IR
 				paint.setColorFilter(cf);
 			}
 
-			public void setStrokeWidth(final int width) {
+			public void setStrokeWidth(final float width) {
 				paint.setStrokeWidth(width);
 			}
 

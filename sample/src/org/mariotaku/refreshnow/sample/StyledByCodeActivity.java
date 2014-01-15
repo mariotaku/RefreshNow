@@ -58,7 +58,7 @@ public class StyledByCodeActivity extends Activity implements OnRefreshListener 
 		final RefreshNowProgressIndicator indicator = (RefreshNowProgressIndicator) findViewById(android.R.id.progress);
 		final Resources res = getResources();
 		final int[] colors = res.getIntArray(R.array.gplus_colors);
-		final int width = (int) (res.getDisplayMetrics().density * 3);
+		final float width =  (res.getDisplayMetrics().density * 3);
 		final IndicatorConfig.Builder cb = new IndicatorConfig.Builder(this);
 		cb.reversed(true);
 		cb.mirrorMode(true);
@@ -68,8 +68,8 @@ public class StyledByCodeActivity extends Activity implements OnRefreshListener 
 		cb.progressColor(colors[0]);
 		cb.indeterminateColors(colors);
 		cb.sectionsCount(2);
-		cb.indeterminateWidth(width);
-		cb.progressWidth(width);
+		cb.indeterminateStrokeWidth(width);
+		cb.progressStrokeWidth(width);
 		mListView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, objects));
 		mListView.setOnRefreshListener(this);
 		mListView.setRefreshIndicatorView(indicator);

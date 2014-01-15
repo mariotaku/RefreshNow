@@ -5,8 +5,6 @@ import android.util.DisplayMetrics;
 
 public final class RefreshNowConfig {
 
-	public static final int MAX_OVERSCROLL_DISTANCE = 48;
-
 	private int maxOverScrollDistance;
 	private int minPullDivisor;
 	private int extraPullDivisor;
@@ -37,7 +35,9 @@ public final class RefreshNowConfig {
 			final DisplayMetrics dm = context.getResources().getDisplayMetrics();
 			config = new RefreshNowConfig();
 			density = dm.density;
-			maxOverScrollDistance(MAX_OVERSCROLL_DISTANCE);
+			maxOverScrollDistance(48);
+			minPullDivisor(2);
+			extraPullDivisor(3);
 		}
 
 		public RefreshNowConfig build() {

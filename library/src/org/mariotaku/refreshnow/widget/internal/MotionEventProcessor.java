@@ -23,12 +23,40 @@ public class MotionEventProcessor {
 	 * @return <code>true</code> if event consumed, <code>false</code> otherwise
 	 */
 	public MotionEvent onTouchEvent(final MotionEvent ev) {
-		final float focusX = ev.getX(), focusY = ev.getY();
-		switch (ev.getAction()) {
-			case MotionEvent.ACTION_DOWN: {
+		final int action = ev.getAction();
+
+		final boolean pointerUp = (action & MotionEvent.ACTION_MASK) == MotionEvent.ACTION_POINTER_UP;
+		final int skipIndex = pointerUp ? ev.getActionIndex() : -1;
+
+		// Determine focal point
+		float sumX = 0, sumY = 0;
+		final int count = ev.getPointerCount();
+		for (int i = 0; i < count; i++) {
+			if (skipIndex == i) {
+				continue;
+			}
+			sumX += ev.getX(i);
+			sumY += ev.getY(i);
+		}
+		final int div = pointerUp ? count - 1 : count;
+		final float focusX = sumX / div;
+		final float focusY = sumY / div;
+
+		switch (action & MotionEvent.ACTION_MASK) {
+			case MotionEvent.ACTION_POINTER_DOWN: {
 				mDownFocusX = mLastFocusX = focusX;
 				mDownFocusY = mLastFocusY = focusY;
 				break;
+			}
+			case MotionEvent.ACTION_POINTER_UP: {
+				mDownFocusX = mLastFocusX = focusX;
+				mDownFocusY = mLastFocusY = focusY;
+				break;
+			}
+			case MotionEvent.ACTION_DOWN: {
+				mDownFocusX = mLastFocusX = focusX;
+				mDownFocusY = mLastFocusY = focusY;
+				return mListener.onDown(ev);
 			}
 			case MotionEvent.ACTION_MOVE: {
 				final int deltaX = (int) (focusX - mDownFocusX);
@@ -50,6 +78,8 @@ public class MotionEventProcessor {
 	}
 
 	public static interface OnGestureEventListener {
+
+		public MotionEvent onDown(MotionEvent ev);
 
 		public MotionEvent onScroll(MotionEvent ev, float distanceX, float distanceY);
 

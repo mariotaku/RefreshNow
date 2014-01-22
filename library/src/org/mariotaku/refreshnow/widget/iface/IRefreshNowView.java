@@ -93,6 +93,11 @@ public interface IRefreshNowView {
 		}
 
 		@Override
+		public MotionEvent onDown(final MotionEvent ev) {
+			return ev;
+		}
+
+		@Override
 		public MotionEvent onScroll(final MotionEvent ev, final float distanceX, final float distanceY) {
 			final int deltaY = Math.round(distanceY), scrollY = mView.getScrollY();
 			final boolean canScrollVertically = mView.canScrollVertically(deltaY);

@@ -135,7 +135,7 @@ public interface IRefreshNowView {
 			final int action = ev.getAction();
 			switch (action) {
 				case MotionEvent.ACTION_DOWN: {
-					mScroller.forceFinished(true);
+					mScroller.abortAnimation();
 					break;
 				}
 				case MotionEvent.ACTION_UP:

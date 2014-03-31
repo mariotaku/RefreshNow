@@ -36,8 +36,8 @@ public class RefreshNowListView extends ListView implements IRefreshNowView {
 	}
 
 	@Override
-	public boolean onTouchEvent(final MotionEvent ev) {
-		return super.onTouchEvent(mHelper.processOnTouchEvent(ev));
+	public boolean dispatchTouchEvent(final MotionEvent ev) {
+		return super.dispatchTouchEvent(mHelper.processOnTouchEvent(ev));
 	}
 
 	@Override
